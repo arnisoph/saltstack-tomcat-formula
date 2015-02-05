@@ -9,6 +9,8 @@ def run():
     config = {}
     datamap = __salt__['formhelper.get_defaults'](formula=__formname__, file_extensions=['yaml'], saltenv=__env__)['yaml']
 
+    _gen_state = __salt__['formhelper.generate_state']
+
     # SLS includes/ excludes
     config['include'] = datamap.get('sls_include', [])
     config['extend'] = datamap.get('sls_extend', {})
@@ -22,7 +24,7 @@ def run():
             {'makedirs': True},
             ]
 
-    config['tomcat_base_dir'] = __salt__['formhelper.generate_state']('file', 'directory', attrs)
+    config['tomcat_base_dir'] = _gen_state('file', 'directory', attrs)
 
     for i_id, instance in datamap.get('instances', {}).iteritems():
         instance_dir = instance.get('basedir', '{0}/{1}'.format(datamap['instance_defaults'].get('basedir'), i_id))
@@ -38,7 +40,7 @@ def run():
         if 'source_hash' in instance:
             attrs.append({'source_hash': instance.get('source_hash')})
 
-        config['tomcat_{0}_archive'.format(i_id)] = __salt__['formhelper.generate_state']('archive', 'extracted', attrs)
+        config['tomcat_{0}_archive'.format(i_id)] = _gen_state('archive', 'extracted', attrs)
 
         # State tomcat archive link
         attrs = [
@@ -48,7 +50,7 @@ def run():
             {'group': 'root'},
             ]
 
-        config['tomcat_{0}_archive_link'.format(i_id)] = __salt__['formhelper.generate_state']('file', 'symlink', attrs)
+        config['tomcat_{0}_archive_link'.format(i_id)] = _gen_state('file', 'symlink', attrs)
 
         for w_id, webapp in instance.get('webapps', {}).iteritems():
             if not webapp.get('manage', False):
@@ -66,10 +68,7 @@ def run():
                     {'mode': 750},
                     ]
 
-                config['tomcat_{0}_webapp_{1}_dir'.format(i_id, w_id)] = __salt__['formhelper.generate_state']('file',
-                                                                                                               webapp.get('ensure'),
-                                                                                                               attrs
-                                                                                                               )
+                config['tomcat_{0}_webapp_{1}_dir'.format(i_id, w_id)] = _gen_state('file', webapp.get('ensure'), attrs)
 
                 if 'war' in webapp:
                     # State webapp war file
@@ -84,8 +83,5 @@ def run():
                     if 'source_hash' in webapp['war']:
                         attrs.append({'source_hash': webapp['war'].get('source_hash')})
 
-                    config['tomcat_{0}_webapp_{1}_war'.format(i_id, w_id)] = __salt__['formhelper.generate_state']('file',
-                                                                                                                   webapp.get('ensure', 'managed'),
-                                                                                                                   attrs
-                                                                                                                   )
+                    config['tomcat_{0}_webapp_{1}_war'.format(i_id, w_id)] = _gen_state('file', webapp.get('ensure', 'managed'), attrs)
     return config
