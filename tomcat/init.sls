@@ -59,8 +59,8 @@ def run():
             if not webapp.get('manage', False):
                 continue
 
-            webapps_root = webapp.get(instance_default_user, '{0}/{1}/webapps'.format(instance_dir,
-                                                                                      instance.get('version')))
+            webapps_root = webapp.get(instance_default_user,
+                                      '{0}/{1}/webapps'.format(instance_dir, instance.get('version')))
             webapp_root = webapp.get(instance_default_group, '{0}/{1}'.format(webapps_root, webapp.get('alias', w_id)))
 
             if webapp.get('ensure', 'present') == 'absent':
@@ -76,8 +76,8 @@ def run():
 
             if 'war' in webapp:
                 # State webapp war file
-                war_file = '{0}/{1}'.format(webapps_root, webapp['war'].get('name', webapp.get('alias',
-                                                                                               '{0}.war'.format(w_id))))
+                war_file = '{0}/{1}'.format(webapps_root,
+                                            webapp['war'].get('name', webapp.get('alias', '{0}.war'.format(w_id))))
                 attrs = [
                     {'name': war_file},
                     {'source': webapp['war'].get('source')},
