@@ -1,67 +1,91 @@
-#!jinja|yaml
+#!py
+# -*- coding: utf-8 -*-
+# vim: ts=4 sw=4 et
 
-{% from 'tomcat/defaults.yaml' import rawmap_osfam with context %}
-{% set datamap = salt['grains.filter_by'](rawmap_osfam, merge=salt['pillar.get']('tomcat:lookup')) %}
+__formname__ = 'tomcat'
 
-include: {{ datamap.sls_include|default([]) }}
-extend: {{ datamap.sls_extend|default({}) }}
 
-tomcat_base_dir:
-  file:
-    - directory
-    - name: {{ datamap.instance.basedir }}
-    - mode: 755
-    - user: root
-    - group: root
-    - makedirs: True
+def run():
+    config = {}
+    datamap = __salt__['formhelper.get_defaults'](formula=__formname__, file_extensions=['yaml'], saltenv=__env__)['yaml']
 
-{% for id, instance in salt['pillar.get']('tomcat:instances', {})|dictsort %}
-  {% set instance_dir = instance.basedir|default(datamap.instance.basedir) ~ '/' ~ id %}
+    # SLS includes/ excludes
+    config['include'] = datamap.get('sls_include', [])
+    config['extend'] = datamap.get('sls_extend', {})
 
-tomcat_{{ id }}_archive:
-  archive:
-    - extracted
-    - name: {{ instance_dir }}
-    - source: {{ instance.source }}
-  {% if 'source_hash' in instance %}
-    - source_hash: {{ instance.source_hash }}
-  {% endif %}
-    - archive_format: {{ instance.archive_format|default('tar') }}
-    - keep: {{ instance.archive_cache|default(True) }}
+    # State tomcat base directory
+    attrs = [
+            {'name': datamap['instance_defaults'].get('basedir')},
+            {'mode': 755},
+            {'user': 'root'},
+            {'group': 'root'},
+            {'makedirs': True},
+            ]
 
-tomcat_{{ id }}_archive_link:
-  file:
-    - symlink
-    - name: {{ instance_dir }}/{{ instance.version }}
-    - target: {{ instance_dir }}/{{ archive_dir|default('apache-tomcat-' ~ instance.version) }}
-    - user: root
-    - group: root
+    config['tomcat_base_dir'] = __salt__['formhelper.generate_state']('file', 'directory', attrs)
 
-  {% for w_id, webapp in instance.webapps|default({})|dictsort if webapp.manage|default(False) %}
-    {% set webapps_root = webapp.root|default(instance_dir ~ '/' ~ instance.version ~ '/webapps') %}
-    {% set webapp_root = webapp.root|default(webapps_root ~ '/' ~ webapp.alias|default(w_id)) %}
-    {% if webapp.ensure|default('present') == 'absent' %}
-tomcat_{{ id }}_webapp_{{ w_id }}_dir:
-  file:
-    - {{ webapp.ensure }}
-    - name: {{ webapp_root }}
-    - user: root
-    - group: root
-    - mode: 750
-    {% endif %}
+    for i_id, instance in datamap.get('instances', {}).iteritems():
+        instance_dir = instance.get('basedir', '{0}/{1}'.format(datamap['instance_defaults'].get('basedir'), i_id))
 
-    {% if 'war' in webapp %}
-tomcat_{{ id }}_webapp_{{ w_id }}_war:
-  file:
-    - {{ webapp.ensure|default('managed') }}
-    - name: {{ webapps_root }}/{{ webapp.war.name|default(webapp.alias|default(w_id) ~ '.war') }}
-    - source: {{ webapp.war.source }}
-      {% if 'source_hash' in webapp.war %}
-    - source_hash: {{ webapp.war.source_hash }}
-      {% endif %}
-    - user: root
-    - group: root
-    - mode: 644
-    {% endif %}
-  {% endfor %}
-{% endfor %}
+        # State instance directory
+        attrs = [
+            {'name': instance_dir},
+            {'source': instance.get('source')},
+            {'keep': instance.get('archive_cache', True)},
+            {'archive_format': instance.get('archive_format', 'tar')},
+            ]
+
+        if 'source_hash' in instance:
+            attrs.append({'source_hash': instance.get('source_hash')})
+
+        config['tomcat_{0}_archive'.format(i_id)] = __salt__['formhelper.generate_state']('archive', 'extracted', attrs)
+
+        # State tomcat archive link
+        attrs = [
+            {'name': '{0}/{1}'.format(instance_dir, instance.get('version'))},
+            {'target': '{0}/{1}'.format(instance_dir, instance.get('archive_dir', 'apache-tomcat-{0}'.format(instance.get('version'))))},
+            {'user': 'root'},
+            {'group': 'root'},
+            ]
+
+        config['tomcat_{0}_archive_link'.format(i_id)] = __salt__['formhelper.generate_state']('file', 'symlink', attrs)
+
+        for w_id, webapp in instance.get('webapps', {}).iteritems():
+            if not webapp.get('manage', False):
+                continue
+
+            webapps_root = webapp.get('root', '{0}/{1}/webapps'.format(instance_dir, instance.get('version')))
+            webapp_root = webapp.get('root', '{0}/{1}'.format(webapps_root, webapp.get('alias', w_id)))
+
+            if webapp.get('ensure', 'present') == 'absent':
+                # State webapp dir
+                attrs = [
+                    {'name': webapp_root},
+                    {'user': 'root'},
+                    {'group': 'root'},
+                    {'mode': 750},
+                    ]
+
+                config['tomcat_{0}_webapp_{1}_dir'.format(i_id, w_id)] = __salt__['formhelper.generate_state']('file',
+                                                                                                               webapp.get('ensure'),
+                                                                                                               attrs
+                                                                                                               )
+
+                if 'war' in webapp:
+                    # State webapp war file
+                    attrs = [
+                        {'name': '{0}/{1}'.format(webapps_root, webapp['war'].get('name', webapp.get('alias', '{0}.war'.format(w_id))))},
+                        {'source': webapp['war'].get('source')},
+                        {'user': 'root'},
+                        {'group': 'root'},
+                        {'mode': 644},
+                        ]
+
+                    if 'source_hash' in webapp['war']:
+                        attrs.append({'source_hash': webapp['war'].get('source_hash')})
+
+                    config['tomcat_{0}_webapp_{1}_war'.format(i_id, w_id)] = __salt__['formhelper.generate_state']('file',
+                                                                                                                   webapp.get('ensure', 'managed'),
+                                                                                                                   attrs
+                                                                                                                   )
+    return config

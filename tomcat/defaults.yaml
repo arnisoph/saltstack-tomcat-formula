@@ -1,8 +1,7 @@
-{% load_yaml as rawmap_osfam %}
-Debian:
-  instance:
-    basedir: /srv/tomcat
-RedHat:
-  instance:
-    basedir: /srv/tomcat
-{% endload %}
+os_family:
+  Debian:
+    instance_defaults:
+      basedir: /srv/tomcat
+  RedHat:
+    instance_defaults:
+      basedir: /srv/tomcat
