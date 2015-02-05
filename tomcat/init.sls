@@ -7,7 +7,7 @@ __formname__ = 'tomcat'
 
 def run():
     config = {}
-    datamap = __salt__['formhelper.get_defaults'](formula=__formname__, file_extensions=['yaml'], saltenv=__env__)['yaml']
+    datamap = __salt__['formhelper.get_defaults'](__formname__, ['yaml'], __env__)['yaml']
 
     _gen_state = __salt__['formhelper.generate_state']
 
@@ -17,12 +17,12 @@ def run():
 
     # State tomcat base directory
     attrs = [
-            {'name': datamap['instance_defaults'].get('basedir')},
-            {'mode': 755},
-            {'user': 'root'},
-            {'group': 'root'},
-            {'makedirs': True},
-            ]
+                {'name': datamap['instance_defaults'].get('basedir')},
+                {'mode': 755},
+                {'user': 'root'},
+                {'group': 'root'},
+                {'makedirs': True},
+                ]
 
     config['tomcat_base_dir'] = _gen_state('file', 'directory', attrs)
 
@@ -43,9 +43,10 @@ def run():
         config['tomcat_{0}_archive'.format(i_id)] = _gen_state('archive', 'extracted', attrs)
 
         # State tomcat archive link
+        archive_dir = instance.get('archive_dir', 'apache-tomcat-{0}'.format(instance.get('version')))
         attrs = [
             {'name': '{0}/{1}'.format(instance_dir, instance.get('version'))},
-            {'target': '{0}/{1}'.format(instance_dir, instance.get('archive_dir', 'apache-tomcat-{0}'.format(instance.get('version'))))},
+            {'target': '{0}/{1}'.format(instance_dir, archive_dir)},
             {'user': 'root'},
             {'group': 'root'},
             ]
@@ -72,8 +73,10 @@ def run():
 
                 if 'war' in webapp:
                     # State webapp war file
+                    war_file = '{0}/{1}'.format(webapps_root,
+                                                webapp['war'].get('name', webapp.get('alias', '{0}.war'.format(w_id))))
                     attrs = [
-                        {'name': '{0}/{1}'.format(webapps_root, webapp['war'].get('name', webapp.get('alias', '{0}.war'.format(w_id))))},
+                        {'name': war_file},
                         {'source': webapp['war'].get('source')},
                         {'user': 'root'},
                         {'group': 'root'},
@@ -83,5 +86,7 @@ def run():
                     if 'source_hash' in webapp['war']:
                         attrs.append({'source_hash': webapp['war'].get('source_hash')})
 
-                    config['tomcat_{0}_webapp_{1}_war'.format(i_id, w_id)] = _gen_state('file', webapp.get('ensure', 'managed'), attrs)
+                    config['tomcat_{0}_webapp_{1}_war'.format(i_id, w_id)] = _gen_state('file',
+                                                                                        webapp.get('ensure',
+                                                                                                   'managed'), attrs)
     return config
