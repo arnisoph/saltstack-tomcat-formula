@@ -19,12 +19,12 @@ def run():
 
     # State tomcat base directory
     attrs = [
-                {'name': datamap['instance_defaults'].get('basedir')},
-                {'mode': 755},
-                {'user': instance_default_user},
-                {'group': instance_default_group},
-                {'makedirs': True},
-                ]
+        {'name': datamap['instance_defaults'].get('basedir')},
+        {'mode': 755},
+        {'user': instance_default_user},
+        {'group': instance_default_group},
+        {'makedirs': True},
+        ]
 
     config['tomcat_base_dir'] = _gen_state('file', 'directory', attrs)
 
@@ -42,7 +42,8 @@ def run():
         if 'source_hash' in instance:
             attrs.append({'source_hash': instance.get('source_hash')})
 
-        config['tomcat_{0}_archive'.format(i_id)] = _gen_state('archive', 'extracted', attrs)
+        state_id = 'tomcat_{0}_archive'.format(i_id)
+        config[state_id] = _gen_state('archive', 'extracted', attrs)
 
         # State tomcat archive link
         archive_dir = instance.get('archive_dir', 'apache-tomcat-{0}'.format(instance.get('version')))
@@ -53,7 +54,8 @@ def run():
             {'group': instance_default_group},
             ]
 
-        config['tomcat_{0}_archive_link'.format(i_id)] = _gen_state('file', 'symlink', attrs)
+        state_id = 'tomcat_{0}_archive_link'.format(i_id)
+        config[state_id] = _gen_state('file', 'symlink', attrs)
 
         for w_id, webapp in instance.get('webapps', {}).iteritems():
             if not webapp.get('manage', False):
@@ -62,6 +64,7 @@ def run():
             webapps_root = webapp.get(instance_default_user,
                                       '{0}/{1}/webapps'.format(instance_dir, instance.get('version')))
             webapp_root = webapp.get(instance_default_group, '{0}/{1}'.format(webapps_root, webapp.get('alias', w_id)))
+            webapp_name = webapp.get('name', webapp.get('alias', w_id))
 
             if webapp.get('ensure', 'present') == 'absent':
                 # State webapp dir
@@ -72,26 +75,42 @@ def run():
                     {'mode': 750},
                     ]
 
-                config['tomcat_{0}_webapp_{1}_dir'.format(i_id, w_id)] = _gen_state('file', webapp.get('ensure'), attrs)
+                state_id = 'tomcat_{0}_webapp_{1}_dir'.format(i_id, w_id)
+                config[state_id] = _gen_state('file', webapp.get('ensure'), attrs)
 
             if 'war' in webapp:
-                # State webapp war file
-                war_file = '{0}/{1}'.format(webapps_root,
-                                            webapp['war'].get('name', webapp.get('alias', '{0}.war'.format(w_id))))
-                attrs = [
-                    {'name': war_file},
-                    {'source': webapp['war'].get('source')},
-                    {'user': instance_default_user},
-                    {'group': instance_default_group},
-                    {'mode': 644},
-                    ]
+                deployment_type = webapp['war'].get('deployment_type', 'manager')
+                war_file = '{0}/{1}'.format(webapps_root, webapp['war'].get('name', '{0}.war'.format(webapp_name)))
+                war_source = webapp['war'].get('source')
 
-                if 'source_hash' in webapp['war']:
-                    attrs.append({'source_hash': webapp['war'].get('source_hash')})
+                if deployment_type == 'simple':
+                    # State webapp war file
+                    attrs = [
+                        {'name': war_file},
+                        {'source': war_source},
+                        {'user': instance_default_user},
+                        {'group': instance_default_group},
+                        {'mode': 644},
+                        ]
 
-                config['tomcat_{0}_webapp_{1}_war'.format(i_id, w_id)] = _gen_state('file',
-                                                                                    webapp.get('ensure', 'managed'),
-                                                                                    attrs)
+                    if 'source_hash' in webapp['war']:
+                        attrs.append({'source_hash': webapp['war'].get('source_hash')})
+
+                    state_id = 'tomcat_{0}_webapp_{1}_war'.format(i_id, w_id)
+                    config[state_id] = _gen_state('file', webapp.get('ensure', 'managed'), attrs)
+
+                elif deployment_type == 'manager':
+                    # State webapp war tomcat deployment
+                    context_path = webapp['war'].get('context', '/{0}'.format(webapp_name))
+                    attrs = [
+                        {'name': context_path},
+                        {'war': war_source},
+                        {'url': webapp['war'].get('manager_url', 'http://127.0.0.1:18080/manager')},  # TODO instance id port
+                        {'timeout': webapp['war'].get('manager_timeout', 180)},
+                        ]
+
+                    state_id = 'tomcat_{0}_webapp_{1}_war_manager_deploy'.format(i_id, w_id)
+                    config[state_id] = _gen_state('tomcat', webapp.get('ensure', 'war_deployed'), attrs)
 
             # State tomcat instance dir perms
             attrs = [
@@ -102,5 +121,7 @@ def run():
                 {'recurse': ['user', 'group']},
                 ]
 
-            config['tomcat_{0}_dirperms'.format(i_id)] = _gen_state('file', 'directory', attrs)
+            state_id = 'tomcat_{0}_dirperms'.format(i_id)
+            config[state_id] = _gen_state('file', 'directory', attrs)
+
     return config
