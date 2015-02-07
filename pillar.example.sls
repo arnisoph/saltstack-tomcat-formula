@@ -10,7 +10,8 @@ java:
 tomcat:
   lookup:
     instances:
-      i0:
+      i1:
+        id: 1
         version: 8.0.18
         source: http://fipmb1012.domain.de/share/tomcat/apache-tomcat-8.0.18.tar.gz
         source_hash: md5=00a4f4790e777a2c5b1ed966de3e2f56
