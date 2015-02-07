@@ -33,12 +33,6 @@ def run():
                     {'user': instance_default_user},
                     {'group': instance_default_group},
                     {'mode': 750},
-                    {'require': [
-                        {'file': 'tomcat_{0}_archive_link'.format(i_name)},
-                        ]},
-                    {'require_in': [
-                        {'file': 'tomcat_{0}_dirperms'.format(i_name)},
-                        ]},
                     ]
 
                 state_id = 'tomcat_{0}_webapp_{1}_dir'.format(i_name, w_id)
@@ -57,12 +51,6 @@ def run():
                         {'user': instance_default_user},
                         {'group': instance_default_group},
                         {'mode': 644},
-                        {'require': [
-                            {'file': 'tomcat_{0}_archive_link'.format(i_name)},
-                            ]},
-                        {'require_in': [
-                            {'file': 'tomcat_{0}_dirperms'.format(i_name)},
-                            ]},
                         ]
 
                     if 'source_hash' in webapp['war']:
@@ -80,12 +68,6 @@ def run():
                         {'url': webapp['war'].get('manager_url',
                                                   'http://127.0.0.1:{0}8080/manager'.format(instance_id))},
                         {'timeout': webapp['war'].get('manager_timeout', 180)},
-                        {'require': [
-                            {'file': 'tomcat_{0}_archive_link'.format(i_name)},
-                            ]},
-                        {'require_in': [
-                            {'file': 'tomcat_{0}_dirperms'.format(i_name)},
-                            ]},
                         ]
 
                     state_id = 'tomcat_{0}_webapp_{1}_war_manager_deploy'.format(i_name, w_id)
