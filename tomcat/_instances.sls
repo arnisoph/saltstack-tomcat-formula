@@ -74,7 +74,7 @@ def run():
                                                     version.get('version'),
                                                     files_attrs.get('relative_path',
                                                                     files_default_attrs.get('relative_path')))
-                    # TODO listen service
+
                     context = version
                     context['i_name'] = i_name
                     context['id'] = instance_id
@@ -91,7 +91,7 @@ def run():
                         {'require_in': [
                             {'file': 'tomcat_{0}_dirperms'.format(i_name)},
                             ]},
-                        {'listen_in': [
+                        {'watch_in': [
                             {'service': 'tomcat_{0}_service'.format(i_name)},
                             ]},
                         ]
@@ -113,6 +113,9 @@ def run():
         attrs = [
             {'name': 'tomcat-{0}'.format(i_name)},
             {'enable': instance.get('enable', True)},
+            {'require': [
+                {'file': 'tomcat_{0}_dirperms'.format(i_name)},
+                ]},
             ]
 
         state_id = 'tomcat_{0}_service'.format(i_name)

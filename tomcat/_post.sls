@@ -24,9 +24,6 @@ def run():
             {'group': instance_default_group},
             {'mode': 755},
             {'recurse': ['user', 'group']},
-            {'require_in': [
-                {'service': 'tomcat_{0}_service'.format(i_name)},
-                ]},
             ]
 
         state_id = 'tomcat_{0}_dirperms'.format(i_name)
