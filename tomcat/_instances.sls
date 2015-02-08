@@ -26,7 +26,7 @@ def run():
             ]
 
         if 'source_hash' in instance:
-            attrs.append(dict(source_hash=instance.get('source_hash')))
+            attrs.append(dict({'source_hash': instance.get('source_hash')}))
 
         state_id = 'tomcat_{0}_archive'.format(i_name)
         config[state_id] = _gen_state('archive', 'extracted', attrs)
@@ -98,13 +98,13 @@ def run():
 
                     contents = files_attrs.get('contents', False)
                     if contents:
-                        attrs.append(dict(
-                            contents_pillar='tomcat:lookup:instances:{0}:'
-                                            'versions:{1}:files:{2}:contents'.format(i_name, v_id, files_name)))
+                        attrs.append(dict({
+                            'contents_pillar': 'tomcat:lookup:instances:{0}:'
+                                            'versions:{1}:files:{2}:contents'.format(i_name, v_id, files_name)}))
                     else:
-                        attrs.append(dict(source=files_attrs.get('template_path',
+                        attrs.append(dict({'source': files_attrs.get('template_path',
                                                                  'salt://{0}/files/{1}'.format(__formula__,
-                                                                                               files_name))))
+                                                                                               files_name))}))
 
                     state_id = 'tomcat_{0}_files_{1}'.format(i_name, files_name)
                     config[state_id] = _gen_state('file', files_attrs.get('ensure', 'managed'), attrs)
