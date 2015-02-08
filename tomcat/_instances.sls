@@ -32,7 +32,6 @@ def run():
         config[state_id] = _gen_state('archive', 'extracted', attrs)
 
         # State tomcat archive link current
-        archive_dir = instance.get('archive_dir', 'apache-tomcat-{0}'.format(instance.get('version')))
         attrs = [
             {'name': '{0}/cur'.format(instance_dir)},
             {'target': '{0}/{1}'.format(instance_dir, instance.get('cur_version'))},
@@ -55,7 +54,7 @@ def run():
                 {'user': instance_default_user},
                 {'group': instance_default_group},
                 {'require': [
-                    {'archive': 'tomcat_{0}_archive'.format(i_name)},
+                    {'file': 'tomcat_{0}_archive_link_current'.format(i_name)},
                     ]},
                 ]
 
@@ -87,7 +86,13 @@ def run():
                         {'context': context},
                         {'template': 'jinja'},
                         {'require': [
-                            {'archive': 'tomcat_{0}_archive'.format(i_name)},
+                            {'file': 'tomcat_{0}_archive_link_{1}'.format(i_name, v_id)},
+                            ]},
+                        {'require_in': [
+                            {'file': 'tomcat_{0}_dirperms'.format(i_name)},
+                            ]},
+                        {'watch_in': [
+                            {'service': 'tomcat_{0}_service'.format(i_name)},
                             ]},
                         ]
 
@@ -103,5 +108,14 @@ def run():
 
                     state_id = 'tomcat_{0}_files_{1}'.format(i_name, files_name)
                     config[state_id] = _gen_state('file', files_attrs.get('ensure', 'managed'), attrs)
+
+        # State tomcat instance service
+        attrs = [
+            {'name': 'tomcat-{0}'.format(i_name)},
+            {'enable': instance.get('enable', True)},
+            ]
+
+        state_id = 'tomcat_{0}_service'.format(i_name)
+        config[state_id] = _gen_state('service', instance.get('ensure', 'running'), attrs)
 
     return config

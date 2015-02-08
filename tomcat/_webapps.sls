@@ -14,6 +14,9 @@ def run():
     instance_default_group = datamap['instance_defaults'].get('group')
 
     for i_name, instance in datamap.get('instances', {}).iteritems():
+        if instance.get('ensure', 'running') != 'running':
+            continue
+
         instance_dir = instance.get('basedir', '{0}/{1}'.format(datamap['instance_defaults'].get('basedir'), i_name))
         instance_id = instance.get('id')
 
@@ -53,6 +56,9 @@ def run():
                             {'user': instance_default_user},
                             {'group': instance_default_group},
                             {'mode': 644},
+                            {'require': [
+                                {'service': 'tomcat_{0}_service'.format(i_name)},
+                                ]},
                             ]
 
                         if 'source_hash' in webapp['war']:
@@ -70,6 +76,10 @@ def run():
                             {'url': webapp['war'].get('manager_url',
                                                       'http://127.0.0.1:{0}8080/manager'.format(instance_id))},
                             {'timeout': webapp['war'].get('manager_timeout', 180)},
+                            {'require': [
+                                {'service': 'tomcat_{0}_service'.format(i_name)},
+                                {'file': 'tomcat_{0}_dirperms'.format(i_name)},
+                                ]},
                             ]
 
                         state_id = 'tomcat_{0}_webapp_{1}_war_manager_deploy'.format(i_name, w_id)
