@@ -10,8 +10,8 @@ def run():
     datamap = __salt__['formhelper.get_defaults'](__formula__, __env__, ['yaml'])['yaml']
 
     _gen_state = __salt__['formhelper.generate_state']
-    instance_default_user = datamap['instance_defaults'].get('user', 'tomcat')
-    instance_default_group = datamap['instance_defaults'].get('group', 'tomcat')
+    instance_default_user = datamap['instance_defaults'].get('user')
+    instance_default_group = datamap['instance_defaults'].get('group')
 
     for i_name, instance in datamap.get('instances', {}).iteritems():
         instance_dir = instance.get('basedir', '{0}/{1}'.format(datamap['instance_defaults'].get('basedir'), i_name))

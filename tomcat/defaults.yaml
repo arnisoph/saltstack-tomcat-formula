@@ -1,7 +1,16 @@
-os_family:
-  Debian:
+kernel:
+  Linux:
+    files:
+      setenv:
+        relative_path: bin/setenv.sh
+        mode: 750
+      server:
+        relative_path: conf/server.xml
+      tomcat_users:
+        relative_path: conf/tomcat-users.xml
+      init:
+        mode: 755
     instance_defaults:
       basedir: /srv/tomcat
-  RedHat:
-    instance_defaults:
-      basedir: /srv/tomcat
+      user: tomcat
+      group: tomcat
