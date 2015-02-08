@@ -22,14 +22,14 @@ def run():
 
         for v_id, version in instance.get('versions', {}).iteritems():
             for w_id, webapp in version.get('webapps', {}).iteritems():
-                if not webapp.get('manage', False):
+                if not webapp.get('manage', True):
                     continue
 
+                webapp_name = webapp.get('name', webapp.get('alias', w_id))
                 webapps_root = webapp.get(instance_default_user,
                                           '{0}/{1}/webapps'.format(instance_dir, version.get('version')))
                 webapp_root = webapp.get(instance_default_group, '{0}/{1}'.format(webapps_root,
                                                                                   webapp.get('alias', w_id)))
-                webapp_name = webapp.get('name', webapp.get('alias', w_id))
 
                 if webapp.get('ensure', 'present') == 'absent':
                     # State webapp dir
@@ -41,7 +41,7 @@ def run():
                         ]
 
                     state_id = 'tomcat_{0}_webapp_{1}_dir'.format(i_name, w_id)
-                    config[state_id] = _gen_state('file', webapp.get('ensure'), attrs)
+                    config[state_id] = _gen_state('file', webapp.get('ensure', 'present'), attrs)
 
                 if 'war' in webapp:
                     deployment_type = webapp['war'].get('deployment_type', 'manager')
@@ -78,7 +78,6 @@ def run():
                             {'timeout': webapp['war'].get('manager_timeout', 180)},
                             {'require': [
                                 {'service': 'tomcat_{0}_service'.format(i_name)},
-                                {'file': 'tomcat_{0}_dirperms'.format(i_name)},
                                 ]},
                             ]
 

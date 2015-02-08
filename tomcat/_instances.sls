@@ -91,7 +91,7 @@ def run():
                         {'require_in': [
                             {'file': 'tomcat_{0}_dirperms'.format(i_name)},
                             ]},
-                        {'watch_in': [
+                        {'listen_in': [
                             {'service': 'tomcat_{0}_service'.format(i_name)},
                             ]},
                         ]
@@ -100,11 +100,11 @@ def run():
                     if contents:
                         attrs.append(dict({
                             'contents_pillar': 'tomcat:lookup:instances:{0}:'
-                                            'versions:{1}:files:{2}:contents'.format(i_name, v_id, files_name)}))
+                                               'versions:{1}:files:{2}:contents'.format(i_name, v_id, files_name)}))
                     else:
                         attrs.append(dict({'source': files_attrs.get('template_path',
-                                                                 'salt://{0}/files/{1}'.format(__formula__,
-                                                                                               files_name))}))
+                                                                     'salt://{0}/files/{1}'.format(__formula__,
+                                                                                                   files_name))}))
 
                     state_id = 'tomcat_{0}_files_{1}'.format(i_name, files_name)
                     config[state_id] = _gen_state('file', files_attrs.get('ensure', 'managed'), attrs)
