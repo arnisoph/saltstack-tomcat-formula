@@ -74,7 +74,7 @@ def run():
                                                     version.get('version'),
                                                     files_attrs.get('relative_path',
                                                                     files_default_attrs.get('relative_path')))
-                    # TODO listen service
+
                     context = version
                     context['i_name'] = i_name
                     context['id'] = instance_id
