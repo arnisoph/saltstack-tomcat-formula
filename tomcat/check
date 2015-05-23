@@ -1,0 +1,12 @@
+#!/bin/bash
+
+while true; do
+  files=$(find . -type f -name '*.sls')
+
+  clear
+  for f in ${files[@]}; do
+    python -B -m py_compile $f || continue
+    pep8 --max-line-length=120 $f
+  done
+  sleep 5
+done
